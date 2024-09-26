@@ -60,11 +60,10 @@
                     <thead>
                         <tr class="fontII">
                             <th>Fecha</th>
-                            <th>Imagen</th>
+                            <th class="descripp">Imagen</th>
                             <th>Nombre</th>
                             <th>Documento</th>
-                            <th >Tutor</th>
-                            <th class="descrip text-center"  >Resumen</th>
+                            <th class="descrip text-center"  >Título Proyecto</th>
                             <th class="tribunales" >Tribunales Asignados</th>
                             <th>Modalidad</th>
                             <th >Nota</th>
@@ -74,14 +73,31 @@
                         {% for actividad in actividades %}
                         <tr class="fontII">
                             <td data-label="Fecha">{{ actividad.fecha }}</td>
-                            <td data-label="Imagen"> 
-                                {% if actividad.estudiante.imagen %}
-                                <img src="{{ actividad.estudiante.imagen.url }}" class="rounded-img" alt="Foto del tutor">
-                                {% else %}
-                                <img src="{% static 'img/SINFOTO.webp' %}" class="rounded-img" alt="Sin foto">
+                            <td data-label="Imagen" class="descripp"> 
+                                <div class="foto-container" id="fotoContainer">
+                                    {% if actividad.estudiante.imagen %}
+                                        <img src="{{ actividad.estudiante.imagen.url }}" class="roundedd-img" alt="Foto del estudiante">
+                                    {% endif %}
+                                    {% if actividad.estudiante_uno.imagen %}
+                                        <img src="{{ actividad.estudiante_uno.imagen.url }}" class="roundedd-img" alt="Foto del estudiante">
+                                    {% endif %}
+                                    {% if actividad.estudiante_dos.imagen %}
+                                        <img src="{{ actividad.estudiante_dos.imagen.url }}" class="roundedd-img" alt="Foto del estudiante">
+                                    {% endif %}
+                                </div>
+                                <div id="sinFoto" style="display: none;">
+                                    <img src="{% static 'img/SINFOTO.webp' %}" class="roundedd-img" alt="Sin foto">
+                                </div>
+                            </td>
+                            <td data-label="Nombre">
+                                <span>{{ actividad.estudiante }}</span><br>
+                                {% if actividad.estudiante_uno %}
+                                <span>{{ actividad.estudiante_uno }}</span><br>
+                                {% endif %}
+                                {% if actividad.estudiante_dos %}
+                                <span>{{ actividad.estudiante_dos }}</span><br>
                                 {% endif %}
                             </td>
-                            <td data-label="Nombre">{{ actividad.estudiante }}</td>
                             <td data-label="Documento">
                                 {% if actividad.documentacion %}
                                 <a href="{{ actividad.documentacion.url }}" target="_blank" class="btn btn-sm btn-dark  ">
@@ -94,8 +110,7 @@
                                 Sin documentación
                                 {% endif %}
                             </td>
-                            <td data-label="Tutor">{{ actividad.tutor }}</td>
-                            <td data-label="Resumen" class="descrip ">{{ actividad.resumen }}</td>
+                            <td data-label="Titulo Proyecto " class="descrip text-lg-center">{{ actividad.titulo }}</td>
                             <td data-label="Tribunales" class="tribunales">1: {{ actividad.jurado_1 }}<br>2: {{ actividad.jurado_2 }}<br>3: {{ actividad.jurado_3 }}</td>
                             <td data-label="Modalidad">{{ actividad.modalidad }}</td>
                             <td data-label="Nota">{{ actividad.nota_aprobacion }} Pts.</td>

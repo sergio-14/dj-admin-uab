@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Reporte Repositorios</title>
+    <title>Reporte de Repositorios</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -54,10 +54,26 @@
             height: auto;
         }
     </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Obtener las celdas de los estudiantes
+            const estudianteUno = document.getElementById('estudianteUno');
+            const estudianteDos = document.getElementById('estudianteDos');
+        
+            // Verificar si el contenido de cada celda está vacío (por si el backend no tiene datos)
+            if (!estudianteUno || !estudianteUno.innerText.trim()) {
+                estudianteUno.style.display = 'none'; // Oculta la celda si no hay datos
+            }
+        
+            if (!estudianteDos || !estudianteDos.innerText.trim()) {
+                estudianteDos.style.display = 'none'; // Oculta la celda si no hay datos
+            }
+        });
+    </script>
 </head>
 <body>
-    <h1 class="text">UNIVERSIDAD AUTONOMA DEL BENI JOSE BALLIVIAN</h1>
-    <h2 class="text1">CARRERA DE INGENIERIA DE SISTEMAS</h2>
+    <h1 class="text">UNIVERSIDAD AUTONÓMA DEL BENI JOSÉ BALLIVIÁN</h1>
+    <h2 class="text1">CARRERA DE INGENIERÍA DE SISTEMAS</h2>
     {% for actividad in actividades_repositorio %}
     <hr>
     <h3 class="title">REPORTE DE EGRESADOS PROYECTO FINAL</h3>
@@ -66,14 +82,27 @@
             <tr>
                 <th>Fecha</th>
                 <th>Estudiante</th>
-                <th>Modalidad Optada</th>
+                <th>Modalidad</th>
                 <th>Tutor</th>
             </tr>
         </thead>
         <tbody>
             <tr>
                 <td>{{ actividad.fecha }}</td>
-                <td>{{ actividad.estudiante.apellido }} {{ actividad.estudiante.nombre }} </td>
+                <td id="estudiante">
+                    {{ actividad.estudiante.apellido }} {{ actividad.estudiante.nombre }}
+                    <ul id="estudianteUno">
+                        {% if actividad.estudiante_uno %}
+                        {{ actividad.estudiante_uno.apellido }} {{ actividad.estudiante_uno.nombre }}
+                        {% endif %}
+                    </ul>
+                    <!-- Datos del tercer estudiante (estudiante_dos) -->
+                    <ul id="estudianteDos">
+                        {% if actividad.estudiante_dos %}
+                        {{ actividad.estudiante_dos.apellido }} {{ actividad.estudiante_dos.nombre }}
+                        {% endif %}
+                    </ul>
+                </td>
                 <td>{{ actividad.modalidad }}</td>
                 <td>{{ actividad.tutor.apellido }} {{ actividad.tutor.nombre }}</td>
             </tr>
@@ -98,9 +127,9 @@
     <table>
         <thead>
             <tr>
-                <th>Titulo Proyecto</th>
+                <th>Título Proyecto</th>
                 <th>Descripción</th>
-                <th>Periodo</th>
+                <th>Periodo y Gestion</th>
             </tr>
         </thead>
         <tbody>

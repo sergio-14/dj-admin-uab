@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Reporte Investigaciones Científicas</title>
+    <title>Reporte Acta Perfil de Proyecto</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -27,6 +27,9 @@
         }
         .descrip{
             width: 600px;
+            text-align: left;
+        }
+        .pl{
             text-align: left;
         }
         .descripcion{
@@ -65,12 +68,28 @@
             height: auto;
         }
     </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Obtener las celdas de los estudiantes
+            const estudianteUno = document.getElementById('estudianteUno');
+            const estudianteDos = document.getElementById('estudianteDos');
+        
+            // Verificar si el contenido de cada celda está vacío (por si el backend no tiene datos)
+            if (!estudianteUno || !estudianteUno.innerText.trim()) {
+                estudianteUno.style.display = 'none'; // Oculta la celda si no hay datos
+            }
+        
+            if (!estudianteDos || !estudianteDos.innerText.trim()) {
+                estudianteDos.style.display = 'none'; // Oculta la celda si no hay datos
+            }
+        });
+    </script>
    
 </head>
 <body>
-    <h1 class="text">UNIVERSIDAD AUTONOMA DEL BENI JOSE BALLIVIAN</h1>
-    <h2 class="subtitle">ACTA DEFENSA DE PERFIL DE PROYECTO </h2>
-    <h2 class="subtitle">PERIODO Y GESTION: {{ acta.perperiodo }}</h2>
+    <h1 class="text">UNIVERSIDAD AUTONÓMA DEL BENI JOSÉ BALLIVIÁN</h1>
+    <h2 class="subtitle">ACTA DE DEFENSA PERFIL DE PROYECTO </h2>
+    <h2 class="subtitle">PERÍODO Y GESTIÓN: {{ acta.perperiodo }}</h2>
 
     <table>
         <thead>
@@ -88,10 +107,23 @@
             </tr>
             <tr>
                 <th class="des">Postulante</th>
-                <th class="descrip">Nombre Completo: {{ acta.estudiante.apellido }} {{ acta.estudiante.nombre }}</th>
+                <th id="descripp"> 
+                    <li class="pl">{{ acta.estudiante.apellido }} {{ acta.estudiante.nombre }}</li>
+                    <li class="pl" id="estudianteUno">
+                        {% if acta.estudiante_uno %}
+                        {{ acta.estudiante_uno.apellido }} {{ acta.estudiante_uno.nombre }}
+                        {% endif %}
+                    </li>
+                    <!-- Datos del tercer estudiante (estudiante_dos) -->
+                    <li class="pl" id="estudianteDos">
+                        {% if acta.estudiante_dos %}
+                        {{ acta.estudiante_dos.apellido }} {{ acta.estudiante_dos.nombre }}
+                        {% endif %}
+                    </li>
+                </th>
             </tr>
             <tr>
-                <th class="des">Titulo</th>
+                <th class="des">Título</th>
                 <th class="descrip">{{ acta.titulo }}</th>
             </tr>
             <tr>

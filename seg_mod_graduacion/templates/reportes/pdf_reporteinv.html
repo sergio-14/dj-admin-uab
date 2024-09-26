@@ -13,6 +13,9 @@
             margin: 2px;
             margin-bottom: 10px;
         }
+        .descrip{
+            width: 400px;
+        }
         table {
             width: 100%;
             text-align: center;
@@ -46,9 +49,25 @@
             height: auto;
         }
     </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Obtener las celdas de los estudiantes
+            const estudianteUno = document.getElementById('estudianteUno');
+            const estudianteDos = document.getElementById('estudianteDos');
+        
+            // Verificar si el contenido de cada celda está vacío (por si el backend no tiene datos)
+            if (!estudianteUno || !estudianteUno.innerText.trim()) {
+                estudianteUno.style.display = 'none'; // Oculta la celda si no hay datos
+            }
+        
+            if (!estudianteDos || !estudianteDos.innerText.trim()) {
+                estudianteDos.style.display = 'none'; // Oculta la celda si no hay datos
+            }
+        });
+    </script>
 </head>
 <body>
-    <h1 class="text">UNIVERSIDAD AUTONOMA DEL BENI JOSE BALLIVIAN <span class="text1">CARRERA DE INGENIERIA DE SISTEMAS</span></h1>
+    <h1 class="text">UNIVERSIDAD AUTONÓMA DEL BENI JOSÉ BALLIVIÁN <span class="text1"> CARRERA DE INGENÍERIA DE SISTEMAS</span></h1>
     
     <h3 class="">REPORTE DE ALCANCE INVESTIGACIÓN CIENTÍFICA</h3>
     <table>
@@ -63,10 +82,27 @@
         <tbody>
             <tr>
                 <td>{{ actividad.invfecha_creacion }}</td>
-                <td>{{ actividad.user.apellido }} {{ actividad.user.nombre }}</td>
+
+                <td id="descrip">
+                    <ul class="pl">{{ actividad.user.apellido }} {{ actividad.user.nombre }}</ul>
+                    <ul id="estudianteUno">
+                        {% if actividad.user_uno %}
+                        {{ actividad.user_uno.apellido }} {{ actividad.user_uno.nombre }}
+                        {% endif %}
+                    </ul>
+                    <!-- Datos del tercer estudiante (estudiante_dos) -->
+                    <ul id="estudianteDos">
+                        {% if actividad.user_dos %}
+                        {{ actividad.user_dos.apellido }} {{ actividad.user_dos.nombre }}
+                        {% endif %}
+                    </ul>
+                </td>   
                 <td class="des">{{ actividad.invtitulo }}</td>
             </tr>
         </tbody>
+        
+    </table>
+    <table>
         <thead>
             <tr>
                 <th>Descripción</th>
@@ -76,7 +112,7 @@
         </thead>
         <tbody>
             <tr>
-                <td class="des">{{ actividad.invdescripcion }}</td>
+                <td class="descrip">{{ actividad.invdescripcion }}</td>
                 <td>{{ actividad.investado }}</td>
                 {% for comentario in comentarios %}
                 <td class="des">
@@ -95,7 +131,7 @@
           <p>Sin firma disponible</p>
           {% endif %}
           <span>{{ comentario.user.apellido }} {{ comentario.user.nombre }}<br>
-          Encargado Modalida Graduación</span>
+          Docente de Modalida Graduación</span>
 
           {% endfor %}
         </ul>

@@ -12,6 +12,9 @@
             margin: 2px;
             margin-bottom: 10px;
         }
+        .descrip{
+            width: 400px;
+        }
         table {
             width: 100%;
             text-align: center;
@@ -48,11 +51,11 @@
     </style>
 </head>
 <body>
-    <h1 class="text">UNIVERSIDAD AUTONOMA DEL BENI JOSE BALLIVIAN</h1>
-    <h2 class="text1">CARRERA DE INGENIERIA DE SISTEMAS</h2>
+    <h1 class="text">UNIVERSIDAD AUTONÓMA DEL BENI JOSÉ BALLIVIÁN</h1>
+    <h2 class="text1">CARRERA DE INGENÍERIA DE SISTEMAS</h2>
     {% for actividad in cientifica %}
     <table>
-        <h3 class="title">REPORTE DE ALCANCE INVESTIGACIÓN CIENTÍFICA</h3>
+        <hr ></hr>
         <thead>
             <tr>
                 <th>Fecha</th>
@@ -63,11 +66,25 @@
         <tbody>
             <tr>
                 <td>{{ actividad.invfecha_creacion }}</td>
-                <td>{{ actividad.user.apellido }} {{ actividad.user.nombre }}</td>
+                <td id="descrip">
+                    <ul class="pl">{{ actividad.user.apellido }} {{ actividad.user.nombre }}</ul>
+                    <ul id="estudianteUno">
+                        {% if actividad.user_uno %}
+                        {{ actividad.user_uno.apellido }} {{ actividad.user_uno.nombre }}
+                        {% endif %}
+                    </ul>
+                    <!-- Datos del tercer estudiante (estudiante_dos) -->
+                    <ul id="estudianteDos">
+                        {% if actividad.user_dos %}
+                        {{ actividad.user_dos.apellido }} {{ actividad.user_dos.nombre }}
+                        {% endif %}
+                    </ul>
+                </td>   
                 <td class="des">{{ actividad.invtitulo }}</td>
             </tr>
         </tbody>
-
+    </table>
+    <table>
         <thead>
             <tr>
                 <th>Descripción</th>
@@ -77,7 +94,7 @@
         </thead>
         <tbody>
             <tr>
-                <td class="des">{{ actividad.invdescripcion }}</td>
+                <td class="descrip">{{ actividad.invdescripcion }}</td>
                 <td>{{ actividad.investado }}</td>
                 <td class="des">
                     {% for comentario in actividad.comentarios %}
@@ -87,8 +104,7 @@
                 </td>
             </tr>
         </tbody>
-    </table>
-    <br><br>
+    </table><br>
     
     {% endfor %}
 
@@ -101,9 +117,10 @@
                     <p>Sin firma disponible</p>
                 {% endif %}
                 <span class="textfirma">{{ comentario.user.apellido }} {{ comentario.user.nombre }} <br>
-                Encargado Modalidad Graduación</span>
+                Docente de Modalidad Graduación</span>
             </ul>
         {% endwith %}
     {% endif %}
+    
 </body>
 </html>
