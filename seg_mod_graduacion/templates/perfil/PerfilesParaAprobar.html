@@ -8,22 +8,20 @@
     {% if proyectos.items %}
     {% for proyecto, formulario in proyectos.items %}
     <div class="container">
-        <div class=" mb-4 mx-auto no-gutters px-lg-5" style="max-width: 940px;">
+        <div class=" mb-4 mx-auto no-gutte px-lg-5" style="max-width: 940px;">
             <div class="row g-0 ">
-
-                <div class="col-md-4 m-2">
-                    {% if proyecto.user.imagen %}
-                        <img src="{{ proyecto.user.imagen.url }}" class="p-2 mt-4 no-gutters img-fluid rounded-left and rounded-right to rounded-start and rounded-end" style="height: 300px;" alt="...">
-                    {% else %}
-                        <img src="{% static 'img/SINFOTO.webp' %}" class="p-2 mt-4 no-gutters img-fluid rounded-left and rounded-right to rounded-start and rounded-end" style="height: 300px;" alt="...">
-                    {% endif %}
-                </div>
+              <div class="col-md-4 m-2">
+                <img id="profileImage" 
+                     src="{% if proyecto.user.imagen %}{{ proyecto.user.imagen.url }}{% else %}{% static 'img/SINFOTO.webp' %}{% endif %}" 
+                     class="p-2 mt-4 no-gutters img-fluid rounded-left and rounded-right to rounded-start and rounded-end" 
+                     style="height: 300px;" alt="Imagen de perfil" />
+              </div>
 
                 <div class="col-md-7 px-2">
                     <div class="card-body"><br>
                         <h5 class="title pb-1 fontI colortitle">Titulo: {{ proyecto.pertitulo }}</h5>
                         <h6 class="fontI comentario colortext">Modalidad Optada: {{ proyecto.permodalidad.nombre }}</h6>
-                        <h5 class="fontI colorestados">Postulante: {{ proyecto.user.nombre }} {{ proyecto.user.apellido }}</h5>
+                        <h5 class="fontI colorestados">Postulante: <span id="profileName" class="fontI colortext">{{ proyecto.user.nombre }} {{ proyecto.user.apellido }}</span></h5>
                         <p class="fontI text colortext">Descripcion:<br>{{ proyecto.perdescripcion }}</p>
                         <h2 class="no-guttee py-2 col-lg-5 col-6" data-label="Documento Proyecto"><a href="{{ proyecto.perdocumentacion.url }}" class="list-group-item list-group-item-action">
                             <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" class="bi bi-files" viewBox="0 0 16 16">
@@ -49,6 +47,56 @@
                 <br>
             </div>
         </div><br>
+        <div class="d-flex justify-content-center align-items-center flex-column">
+          <div>
+            {% if paginador.has_previous %}
+            <a class="btn btn-sm btn-dark mx-2" href="?page={{ paginador.previous_page_number }}">Anterior</a>
+            {% endif %}
+            <span> Página {{ paginador.number }} de {{ paginador.paginator.num_pages }} </span>
+            {% if paginador.has_next %}          
+            <a class="btn btn-sm btn-dark mx-2" href="?page={{ paginador.next_page_number }}">Siguiente</a>
+            {% endif %}
+          </div>
+        </div>
+        <script>
+          // Crear una lista solo con los datos que existen
+          const images = [];
+      
+          // Agregar solo las imágenes y nombres que existen
+          if ("{{ proyecto.user.imagen|default_if_none:'' }}" && "{{ proyecto.user.nombre }}") {
+              images.push({ src: "{{ proyecto.user.imagen.url }}", name: "{{ proyecto.user.nombre }} {{ proyecto.user.apellido }}" });
+          }
+          if ("{{ proyecto.user_uno.imagen|default_if_none:'' }}" && "{{ proyecto.user_uno.nombre }}") {
+              images.push({ src: "{{ proyecto.user_uno.imagen.url }}", name: "{{ proyecto.user_uno.nombre }} {{ proyecto.user_uno.apellido }}" });
+          }
+          if ("{{ proyecto.user_dos.imagen|default_if_none:'' }}" && "{{ proyecto.user_dos.nombre }}") {
+              images.push({ src: "{{ proyecto.user_dos.imagen.url }}", name: "{{ proyecto.user_dos.nombre }} {{ proyecto.user_dos.apellido }}" });
+          }
+      
+          let currentIndex = 0;
+      
+          function updateProfile() {
+              const profileImage = document.getElementById('profileImage');
+              const profileName = document.getElementById('profileName');
+      
+              // Cambiar imagen y nombre solo si hay imágenes
+              if (images.length > 0) {
+                  profileImage.src = images[currentIndex].src;
+                  profileName.textContent = images[currentIndex].name;
+              }
+          }
+      
+          function nextProfile() {
+              currentIndex = (currentIndex + 1) % images.length;
+              updateProfile();
+          }
+      
+          // Mostrar el primer perfil al inicio
+          updateProfile();
+      
+          // Cambiar de imagen cada 3 segundos
+          setInterval(nextProfile, 3000);
+        </script>
     {% endfor %}
     {% else %}
     <p class="text-center fontI colorestados">Lista Formularios Perfil de Proyectos para Aprobar Vacía</p>

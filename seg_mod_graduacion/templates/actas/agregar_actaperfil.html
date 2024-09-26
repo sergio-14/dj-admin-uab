@@ -54,6 +54,18 @@
                   <div class="text-danger">{{ form.tutor.errors }}</div>
                 {% endif %}
               </div>
+              <div class="col-md-6 pt-1">
+                {{ form.estudiante_uno.label_tag }}<br>{{ form.estudiante_uno }}
+                {% if form.estudiante_uno.errors %}
+                  <div class="text-danger">{{ form.estudiante_uno.errors }}</div>
+                {% endif %}
+              </div>
+              <div class="col-md-6 pt-1">
+                {{ form.estudiante_dos.label_tag }}<br>{{ form.estudiante_dos }}
+                {% if form.estudiante_dos.errors %}
+                  <div class="text-danger">{{ form.estudiante_dos.errors }}</div>
+                {% endif %}
+              </div>
             </div>
             <div class="col-md-12 pt-1">
               {{ form.titulo.label_tag }}<br>{{ form.titulo }}

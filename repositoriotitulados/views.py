@@ -174,7 +174,6 @@ class pdf_reporte_repositorio(View):
         }
         
         pdf = render_pdf('admrepositorio/pdf_reporte_repositorio.html', data)
-        
-        # Devolver el PDF como respuesta
         return HttpResponse(pdf, content_type='application/pdf')
     
+#def home(request): return render(request, 'home.html')

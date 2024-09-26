@@ -22,16 +22,46 @@ class ModalidadForm(forms.ModelForm):
 class InvCientificaForm(forms.ModelForm):
     class Meta:
         model = InvCientifica
-        fields = ['invtitulo', 'invdescripcion', 'invdocumentacion']
+        fields = ['user_uno', 'user_dos','habilitar_users','invtitulo', 'invdescripcion', 'invdocumentacion' ]
         widgets = {
             'invdescripcion': forms.Textarea(attrs={'class': 'descripcion-field'}),
         }
         
     def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
+
+        # Obtiene el grupo llamado 'Estudiantes'
+        estudiantes_group = Group.objects.get(name='Estudiantes')
+        estudiantes_users = User.objects.filter(groups=estudiantes_group, is_active=True)
+
+        # Filtrar las investigaciones que tienen el estado 'Aprobado'
+        investigaciones_aprobadas = InvCientifica.objects.filter(investado='Aprobado')
+
+        # Obtener los usuarios que ya están relacionados en una investigación aprobada como user, user_uno o user_dos
+        usuarios_con_inv = investigaciones_aprobadas.values_list('user', 'user_uno', 'user_dos')
+        
+        # Aplanar la lista de usuarios (eliminando duplicados con set) y excluir None
+        usuarios_con_inv = set(
+            usuario for usuarios in usuarios_con_inv for usuario in usuarios if usuario is not None
+        )
+
+        # Excluir los usuarios que ya tienen una investigación aprobada
+        estudiantes_users = estudiantes_users.exclude(id__in=usuarios_con_inv)
+
+        # Si el usuario autenticado está creando la investigación, exclúyelo también de las opciones de user_uno y user_dos
+        if self.request and self.request.user.is_authenticated:
+            estudiantes_users = estudiantes_users.exclude(id=self.request.user.id)
+
+        # Establecer el queryset filtrado en los campos 'user_uno' y 'user_dos'
+        self.fields['user_uno'].queryset = estudiantes_users
+        self.fields['user_dos'].queryset = estudiantes_users
+
+        # Marcar los campos como requeridos
         self.fields['invtitulo'].required = True
         self.fields['invdescripcion'].required = True
         self.fields['invdocumentacion'].required = True
+        
         
 class InvComentarioForm(forms.ModelForm):
     class Meta:
@@ -53,13 +83,40 @@ class GlobalSettingsForm(forms.ModelForm):
 class PerfilForm(forms.ModelForm):
     class Meta:
         model = PerfilProyecto
-        fields = ['pertitulo', 'perdescripcion', 'perdocumentacion', 'permodalidad']
+        fields = ['user_uno', 'user_dos','habilitar_users','pertitulo', 'perdescripcion', 'perdocumentacion', 'permodalidad']
         widgets = {
             'perdescripcion': forms.Textarea(attrs={'class': 'descripcion-field'}),
         }
-
+        
     def __init__(self, *args, **kwargs):
-        super(PerfilForm, self).__init__(*args, **kwargs)
+        self.request = kwargs.pop('request', None)
+        super().__init__(*args, **kwargs)
+
+        # Obtiene el grupo llamado 'Estudiantes'
+        estudiantes_group = Group.objects.get(name='Estudiantes')
+        estudiantes_users = User.objects.filter(groups=estudiantes_group, is_active=True)
+
+        # Filtrar las investigaciones que tienen el estado 'Aprobado'
+        perfiles_aprobadas = PerfilProyecto.objects.filter(perestado='Aprobado')
+
+        # Obtener los usuarios que ya están relacionados en una investigación aprobada como user, user_uno o user_dos
+        usuarios_con_perfil = perfiles_aprobadas.values_list('user', 'user_uno', 'user_dos')
+        
+        # Aplanar la lista de usuarios (eliminando duplicados con set) y excluir None
+        usuarios_con_perfil = set(
+            usuario for usuarios in usuarios_con_perfil for usuario in usuarios if usuario is not None
+        )
+
+        # Excluir los usuarios que ya tienen una investigación aprobada
+        estudiantes_users = estudiantes_users.exclude(id__in=usuarios_con_perfil)
+
+        # Si el usuario autenticado está creando la investigación, exclúyelo también de las opciones de user_uno y user_dos
+        if self.request and self.request.user.is_authenticated:
+            estudiantes_users = estudiantes_users.exclude(id=self.request.user.id)
+
+        # Establecer el queryset filtrado en los campos 'user_uno' y 'user_dos'
+        self.fields['user_uno'].queryset = estudiantes_users
+        self.fields['user_dos'].queryset = estudiantes_users
         
          # Set all fields as required
         self.fields['pertitulo'].required = True
@@ -74,6 +131,7 @@ class PerfilForm(forms.ModelForm):
             if choice_label in INCLUDED_MODALITIES
         ]
       
+      
 class PerComentarioForm(forms.ModelForm):
     class Meta:
         model = ComentarioPerfil
@@ -87,10 +145,11 @@ class ActaPerfilForm(forms.ModelForm):
     class Meta:
         model = ActaProyectoPerfil
         fields = [
-            'perperiodo','acta', 'facultad', 'carrera', 'estudiante', 'titulo', 'lugar', 
+            'perperiodo', 'acta', 'facultad', 'carrera', 'estudiante', 
+            'estudiante_uno', 'estudiante_dos', 'titulo', 'lugar', 
             'fechadefensa', 'horainicio', 'horafin', 'tutor', 
             'jurado_1', 'jurado_2', 'jurado_3', 'modalidad', 
-            'resultado','observacion_1', 'observacion_2', 'observacion_3'
+            'resultado', 'observacion_1', 'observacion_2', 'observacion_3'
         ]
         labels = {
             'perperiodo': 'Periodo y Gestión',
@@ -98,6 +157,8 @@ class ActaPerfilForm(forms.ModelForm):
             'facultad': 'Facultad',
             'carrera': 'Carrera',
             'estudiante': 'Postulante',
+            'estudiante_uno': 'Postulante dos',
+            'estudiante_dos': 'Postulante tres',
             'titulo': 'Título del Proyecto',
             'lugar': 'Lugar de Defensa',
             'fechadefensa': 'Fecha de Defensa',
@@ -119,6 +180,8 @@ class ActaPerfilForm(forms.ModelForm):
             'facultad': forms.Select(attrs={'class': 'form-select', 'required': 'required'}),
             'carrera': forms.Select(attrs={'class': 'form-select', 'required': 'required'}),
             'estudiante': forms.Select(attrs={'class': 'form-select', 'required': 'required'}),
+            'estudiante_uno': forms.Select(attrs={'class': 'form-select'}),
+            'estudiante_dos': forms.Select(attrs={'class': 'form-select'}),
             'titulo': forms.TextInput(attrs={'class': 'form-control', 'required': 'required'}),
             'lugar': forms.TextInput(attrs={'class': 'form-control', 'required': 'required'}),
             'fechadefensa': forms.DateInput(attrs={'type': 'date', 'class': 'form-control', 'required': 'required'}),
@@ -134,42 +197,81 @@ class ActaPerfilForm(forms.ModelForm):
             'observacion_2': forms.Textarea(attrs={'rows': 3, 'class': 'form-control', 'required': 'required'}),
             'observacion_3': forms.Textarea(attrs={'rows': 3, 'class': 'form-control', 'required': 'required'}),
         }
+
     def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
-        estudiantes_group = Group.objects.get(name="Estudiantes")
-        docentes_group = Group.objects.get(name="Docentes")
-        usuarios_con_actividad = HabilitarProyectoFinal.objects.values_list('estudiante', flat=True)
-        usuarios_con_perfil_aprobado = PerfilProyecto.objects.filter(perestado='Aprobado').values_list('user', flat=True).distinct() 
-        usuarios_con_resultado_suficiente = ActaProyectoPerfil.objects.filter(resultado='Suficiente').values_list('estudiante', flat=True)
-        self.fields['estudiante'].queryset = User.objects.filter(
-            groups=estudiantes_group
-        ).exclude(
-            id__in=usuarios_con_resultado_suficiente
-        ).exclude(
-            id__in=usuarios_con_actividad
-        ).filter(
-            id__in=usuarios_con_perfil_aprobado
-        ).filter(
-            is_active=True  
-        )
+
+        # Filtrado de estudiantes y asignación a los campos correspondientes
+        estudiantes_users = self._get_estudiantes_filtrados()
         
+        # Establecer el queryset filtrado para los campos de estudiantes
+        self.fields['estudiante_uno'].queryset = estudiantes_users
+        self.fields['estudiante_dos'].queryset = estudiantes_users
+        self.fields['estudiante'].queryset = estudiantes_users
+
+        # Filtrar los usuarios de los grupos de docentes
+        docentes_group = Group.objects.get(name="Docentes")
+        self.fields['tutor'].queryset = User.objects.filter(groups=docentes_group, is_active=True)
+        self.fields['jurado_1'].queryset = User.objects.filter(groups=docentes_group, is_active=True)
+        self.fields['jurado_2'].queryset = User.objects.filter(groups=docentes_group, is_active=True)
+        self.fields['jurado_3'].queryset = User.objects.filter(groups=docentes_group, is_active=True)
+
+        # Limitar las opciones del campo resultado
+        self._filter_resultado_choices()
+    # Obtiene el grupo llamado 'Estudiantes' y usuarios activos
+    def _get_estudiantes_filtrados(self):
+        estudiantes_group = Group.objects.get(name='Estudiantes')
+        estudiantes_users = User.objects.filter(groups=estudiantes_group, is_active=True)
+        # Filtrar los usuarios que ya tienen perfilproyecto aprobadas
+        usuarios_con_perfil_aprobado = PerfilProyecto.objects.filter(perestado='Aprobado').values_list(
+            'user', 'user_uno', 'user_dos')
+        # Aplanar las tuplas para obtener solo los IDs de los usuarios
+        usuarios_con_perfil = set(
+            usuario for usuarios in usuarios_con_perfil_aprobado for usuario in usuarios if usuario is not None)
+        # Filtrar los usuarios que ya tienen un resultado 'Suficiente' o que están en HabilitarProyectoFinal
+        usuarios_con_actividad = HabilitarProyectoFinal.objects.values_list('estudiante', flat=True)
+        usuarios_con_resultado_suficiente = ActaProyectoPerfil.objects.filter(resultado='Suficiente').values_list(
+            'estudiante', 'estudiante_uno', 'estudiante_dos')
+        # Aplanar las tuplas para obtener solo los IDs de los usuarios
+        usuarios_a_excluir = set(usuarios_con_actividad).union(set(
+            usuario for usuarios in usuarios_con_resultado_suficiente for usuario in usuarios if usuario is not None))
+        # Excluir los usuarios que ya tienen un perfil aprobado y actividad finalizada
+        estudiantes_filtrados = estudiantes_users.exclude(id__in=usuarios_a_excluir).filter(id__in=usuarios_con_perfil)
+        return estudiantes_filtrados
+
+    def _filter_resultado_choices(self):
+        # Filtra las opciones del campo 'resultado' para incluir solo 'Suficiente' e 'Insuficiente'
         INCLUDED_RESULT = ['Insuficiente', 'Suficiente']
         self.fields['resultado'].choices = [
             (choice_value, choice_label)
             for choice_value, choice_label in self.fields['resultado'].choices
             if choice_label in INCLUDED_RESULT
         ]
-        self.fields['tutor'].queryset = User.objects.filter(groups=docentes_group, is_active=True)
-        self.fields['jurado_1'].queryset = User.objects.filter(groups=docentes_group, is_active=True)
-        self.fields['jurado_2'].queryset = User.objects.filter(groups=docentes_group, is_active=True)
-        self.fields['jurado_3'].queryset = User.objects.filter(groups=docentes_group, is_active=True)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        estudiante = cleaned_data.get("estudiante")
+        estudiante_uno = cleaned_data.get("estudiante_uno")
+        estudiante_dos = cleaned_data.get("estudiante_dos")
+        
+        # Validación para evitar que se repita el mismo estudiante en varios campos
+        if estudiante and (estudiante == estudiante_uno or estudiante == estudiante_dos):
+            raise forms.ValidationError("El postulante principal no puede ser igual a los otros postulantes.")
+        
+        if estudiante_uno and estudiante_uno == estudiante_dos:
+            raise forms.ValidationError("El postulante dos no puede ser igual a postulante tres.")
+        
+        return cleaned_data
+    
+    
         
 #actas defensa privada
 class ActaPublicaForm(forms.ModelForm):
     class Meta:
         model = ActaPublica
         fields = [
-            'perperiodo','acta', 'facultad', 'carrera', 'estudiante', 'titulo', 'lugar', 
+            'perperiodo','acta', 'facultad', 'carrera', 'estudiante', 'estudiante_uno', 'estudiante_dos', 'titulo', 'lugar', 
             'fechadefensa', 'horainicio', 'horafin', 'tutor', 
             'jurado_1', 'jurado_2', 'jurado_3', 'modalidad', 
             'resultado','calificacion1', 'calificacion2','notatotal', 'observacion_1', 'observacion_2', 'observacion_3', 'presidenteacta'
@@ -180,6 +282,8 @@ class ActaPublicaForm(forms.ModelForm):
             'facultad': 'Facultad',
             'carrera': 'Carrera',
             'estudiante': 'Postulante',
+            'estudiante_uno': 'Postulante dos',
+            'estudiante_dos': 'Postulante tres',
             'titulo': 'Título del Proyecto',
             'lugar': 'Lugar de Defensa',
             'fechadefensa': 'Fecha de Defensa',
@@ -205,6 +309,8 @@ class ActaPublicaForm(forms.ModelForm):
             'facultad': forms.Select(attrs={'class': 'form-select', 'required': 'required'}),
             'carrera': forms.Select(attrs={'class': 'form-select', 'required': 'required'}),
             'estudiante': forms.Select(attrs={'class': 'form-select', 'required': 'required'}),
+            'estudiante_uno': forms.Select(attrs={'class': 'form-select'}),
+            'estudiante_dos': forms.Select(attrs={'class': 'form-select'}),
             'titulo': forms.TextInput(attrs={'class': 'form-control', 'required': 'required'}),
             'lugar': forms.TextInput(attrs={'class': 'form-control', 'required': 'required'}),
             'fechadefensa': forms.DateInput(attrs={'type': 'date', 'class': 'form-control', 'required': 'required'}),
@@ -281,7 +387,7 @@ class ActaPrivadaForm(forms.ModelForm):
     class Meta:
         model = ActaPrivada
         fields = [
-            'perperiodo','acta', 'facultad', 'carrera', 'estudiante', 'titulo', 'lugar', 
+            'perperiodo','acta', 'facultad', 'carrera', 'estudiante', 'estudiante_uno', 'estudiante_dos', 'titulo', 'lugar', 
             'fechadefensa', 'horainicio', 'horafin', 'tutor', 
             'jurado_1', 'jurado_2', 'jurado_3', 'modalidad', 
             'resultado','calificacion1', 'observacion_1', 'observacion_2', 'observacion_3'
@@ -292,6 +398,8 @@ class ActaPrivadaForm(forms.ModelForm):
             'facultad': 'Facultad',
             'carrera': 'Carrera',
             'estudiante': 'Postulante',
+            'estudiante_uno': 'Postulante dos',
+            'estudiante_dos': 'Postulante tres',
             'titulo': 'Título del Proyecto',
             'lugar': 'Lugar de Defensa',
             'fechadefensa': 'Fecha de Defensa',
@@ -314,6 +422,8 @@ class ActaPrivadaForm(forms.ModelForm):
             'facultad': forms.Select(attrs={'class': 'form-select', 'required': 'required'}),
             'carrera': forms.Select(attrs={'class': 'form-select', 'required': 'required'}),
             'estudiante': forms.Select(attrs={'class': 'form-select', 'required': 'required'}),
+            'estudiante_uno': forms.Select(attrs={'class': 'form-select'}),
+            'estudiante_dos': forms.Select(attrs={'class': 'form-select'}),
             'titulo': forms.TextInput(attrs={'class': 'form-control', 'required': 'required'}),
             'lugar': forms.TextInput(attrs={'class': 'form-control', 'required': 'required'}),
             'fechadefensa': forms.DateInput(attrs={'type': 'date', 'class': 'form-control', 'required': 'required'}),
@@ -366,9 +476,11 @@ class ActaPrivadaForm(forms.ModelForm):
 class ActividadControlForm(forms.ModelForm):
     class Meta:
         model = HabilitarProyectoFinal
-        fields = ['estudiante', 'tutor', 'jurado_1', 'jurado_2', 'jurado_3', 'modalidad']
+        fields = ['estudiante','estudiante_uno','estudiante_dos', 'tutor', 'jurado_1', 'jurado_2', 'jurado_3', 'modalidad']
         labels = {
             'estudiante': 'Postulante',
+            'estudiante_uno': 'Postulante dos',
+            'estudiante_dos': 'Postulante tres',
             'tutor': 'Seleccione al Tutor Designado',
             'jurado_1': 'Primero Tribunal Designado',
             'jurado_2': 'Segundo Tribunal Designado',
@@ -377,6 +489,8 @@ class ActividadControlForm(forms.ModelForm):
         }
         widgets = {
             'estudiante': forms.Select(attrs={'class': 'form-select'}),
+            'estudiante_uno': forms.Select(attrs={'class': 'form-select'}),
+            'estudiante_dos': forms.Select(attrs={'class': 'form-select'}),
             'tutor': forms.Select(attrs={'class': 'form-select'}),
             'jurado_1': forms.Select(attrs={'class': 'form-select'}),
             'jurado_2': forms.Select(attrs={'class': 'form-select'}),
@@ -389,10 +503,21 @@ class ActividadControlForm(forms.ModelForm):
         estudiantes_group = Group.objects.get(name="Estudiantes")
         docentes_group = Group.objects.get(name="Docentes")
         usuarios_con_actividad = HabilitarProyectoFinal.objects.values_list('estudiante', flat=True)
-        usuarios_con_perfil_aprobado = PerfilProyecto.objects.filter(perestado='Aprobado').values_list('user', flat=True).distinct()
+        usuarios_con_perfil_aprobado = ActaProyectoPerfil.objects.filter(resultado='Suficiente').values_list('estudiante', flat=True).distinct()
         self.fields['estudiante'].queryset = User.objects.filter(
-            groups=estudiantes_group
+        groups=estudiantes_group,
+        is_active=True  # Solo usuarios activos
         ).exclude(id__in=usuarios_con_actividad).filter(id__in=usuarios_con_perfil_aprobado)
+        # Filtra los estudiantes para 'estudiante_uno' y 'estudiante_dos'
+        self.fields['estudiante_uno'].queryset = User.objects.filter(
+            groups=estudiantes_group,
+            is_active=True  # Solo usuarios activos
+            ).exclude(id__in=usuarios_con_actividad)#.filter(id__in=usuarios_con_perfil_aprobado)
+        self.fields['estudiante_dos'].queryset = User.objects.filter(
+            groups=estudiantes_group,
+            is_active=True  # Solo usuarios activos
+            ).exclude(id__in=usuarios_con_actividad)#.filter(id__in=usuarios_con_perfil_aprobado)
+
         self.fields['tutor'].queryset = User.objects.filter(groups=docentes_group)
         self.fields['jurado_1'].queryset = User.objects.filter(groups=docentes_group)
         self.fields['jurado_2'].queryset = User.objects.filter(groups=docentes_group)
@@ -401,9 +526,11 @@ class ActividadControlForm(forms.ModelForm):
 class EditarActividadControlForm(forms.ModelForm):
     class Meta:
         model = HabilitarProyectoFinal
-        fields = ['estudiante', 'tutor', 'jurado_1', 'jurado_2', 'jurado_3','modalidad']
+        fields = ['estudiante', 'estudiante_uno', 'estudiante_dos', 'tutor', 'jurado_1', 'jurado_2', 'jurado_3','modalidad']
         labels = {
             'estudiante': 'Postulante',
+            'estudiante_uno': 'Postulante dos',
+            'estudiante_dos': 'Postulante tres',
             'tutor': 'Seleccione al Tutor Designado',
             'jurado_1': 'Primero Tribumal Designado',
             'jurado_2': 'Segundo Tribumal Designado',
@@ -412,6 +539,8 @@ class EditarActividadControlForm(forms.ModelForm):
         }
         widgets = {
             'estudiante': forms.Select(attrs={'class': 'form-select'}),
+            'estudiante_uno': forms.Select(attrs={'class': 'form-select'}),
+            'estudiante_dos': forms.Select(attrs={'class': 'form-select'}),
             'tutor': forms.Select(attrs={'class': 'form-select'}),
             'jurado_1': forms.Select(attrs={'class': 'form-select'}),
             'jurado_2': forms.Select(attrs={'class': 'form-select'}),
@@ -430,13 +559,17 @@ class EditarActividadControlForm(forms.ModelForm):
       
         if self.instance and self.instance.pk:
           self.fields['estudiante'].disabled = True
+          self.fields['estudiante_uno'].disabled = True
+          self.fields['estudiante_dos'].disabled = True
              
 class ActividadForm(forms.ModelForm):
     class Meta:
         model = ProyectoFinal
-        fields = ['estudiante', 'tutor', 'jurado_1', 'jurado_2', 'jurado_3', 'titulo', 'resumen', 'modalidad', 'guia_externo', 'documentacion']
+        fields = ['estudiante', 'estudiante_uno', 'estudiante_dos', 'tutor', 'jurado_1', 'jurado_2', 'jurado_3', 'titulo', 'resumen', 'modalidad', 'guia_externo', 'documentacion']
         widgets = {
             'estudiante': forms.Select(attrs={'class': 'form-control', 'disabled': 'disabled'}),
+            'estudiante_uno': forms.Select(attrs={'class': 'form-control', 'disabled': 'disabled'}),
+            'estudiante_dos': forms.Select(attrs={'class': 'form-control', 'disabled': 'disabled'}),
             'tutor': forms.Select(attrs={'class': 'form-control', 'disabled': 'disabled'}),
             'jurado_1': forms.Select(attrs={'class': 'form-control', 'disabled': 'disabled'}),
             'jurado_2': forms.Select(attrs={'class': 'form-control', 'disabled': 'disabled'}),
@@ -455,4 +588,18 @@ class ActComentarioForm(forms.ModelForm):
         widgets = {
             'actcomentario': forms.Textarea(attrs={'class': 'comentari-field'}),
         }
+        
+
+
+from .models import logica
+
+class logicaForm(forms.ModelForm):
+    class Meta:
+        model = logica
+        fields = ['users','user', 'usersdos', 'invtitulo', 'slug', 'invdescripcion', 'invdocumentacion', 'investado', 'habilitar_usuarios_extra']
+    
+    def __init__(self, *args, **kwargs):
+        # Extraemos los datos que se pasaron al formulario
+        super().__init__(*args, **kwargs)
+        
         

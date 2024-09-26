@@ -59,7 +59,12 @@ def handle_permission_denied(request, exception):
 @login_required
 @user_passes_test(lambda u: permiso_Estudiantes(u, 'Estudiantes')) 
 def vista_investigacion(request):
-    proyectos_usuario = InvCientifica.objects.filter(user=request.user).order_by('-invfecha_creacion').prefetch_related('comentarioinvcientifica_set')
+    proyectos_usuario = InvCientifica.objects.filter(
+        Q(user=request.user) | 
+        Q(user_uno=request.user) | 
+        Q(user_dos=request.user)
+    ).order_by('-invfecha_creacion').prefetch_related('comentarioinvcientifica_set')
+    #proyectos_usuario = InvCientifica.objects.filter(user=request.user).order_by('-invfecha_creacion').prefetch_related('comentarioinvcientifica_set')
 
     paginator = Paginator(proyectos_usuario, 1)  
     page_number = request.GET.get('page')
@@ -70,12 +75,23 @@ def vista_investigacion(request):
 @method_decorator(user_passes_test(lambda u: permiso_M_G(u, 'ADMMGS')), name='dispatch')
 class ProyectosParaAprobar(View):
     def get(self, request):
+        # Filtra los proyectos pendientes
         proyectos = InvCientifica.objects.filter(investado='Pendiente')
-        proyectos_con_formulario = {proyecto: InvComentarioForm() for proyecto in proyectos}
         
+        # Paginación: Muestra solo 1 proyecto por página
+        paginator = Paginator(proyectos, 1)
+        page_number = request.GET.get('page')
+        proyectos_paginados = paginator.get_page(page_number)
+        
+        # Generar formulario para cada proyecto
+        proyectos_con_formulario = {proyecto: InvComentarioForm() for proyecto in proyectos_paginados}
+        
+        # Contexto para renderizar en la plantilla
         context = {
             'proyectos': proyectos_con_formulario,
+            'paginador': proyectos_paginados  # Se pasa el objeto paginado para control de navegación
         }
+        
         return render(request, 'invcientifica/ProyectosParaAprobar.html', context)
     
     def post(self, request):
@@ -104,6 +120,7 @@ class ProyectosParaAprobar(View):
         else:
             messages.error(request, 'Hubo un error al procesar la solicitud.')
             return redirect('ProyectosParaAprobar')
+        
 
 class AprobarProyecto(View):
     def post(self, request, proyecto_id):
@@ -141,37 +158,44 @@ def global_settings_view(request):
 @user_passes_test(lambda u: permiso_Estudiantes(u, 'Estudiantes')) 
 def agregar_investigacion(request):
     settings = HabilitarSeguimiento.objects.first()
-    
+
     if not settings:
         messages.error(request, 'No se encontró la configuración global. Por favor, contacta al administrador.')
         return redirect('global_settings')
-    
-    tiene_investigacion_aprobada = InvCientifica.objects.filter(user=request.user, investado='Aprobado').exists()
-    
+
+    # Verifica si el usuario, user_uno o user_dos tienen una investigación aprobada
+    tiene_investigacion_aprobada = InvCientifica.objects.filter(
+        Q(user=request.user) | Q(user_uno=request.user) | Q(user_dos=request.user),
+        investado='Aprobado'
+        ).exists()
+    # Deshabilitar el formulario si no está habilitado globalmente o si hay una investigación aprobada
     form_disabled = not settings.habilitarInv or tiene_investigacion_aprobada
-    
+
     if request.method == 'POST' and not form_disabled:
-        form = InvCientificaForm(request.POST, request.FILES)
+        form = InvCientificaForm(request.POST, request.FILES, request=request)  # Pasa el request aquí
         if form.is_valid():
             proyecto = form.save(commit=False)
-            
+
+            # Generar slug único
             slug = slugify(proyecto.invtitulo)
             counter = 1
             while InvCientifica.objects.filter(slug=slug).exists():
                 slug = f"{slug}-{counter}"
                 counter += 1
             proyecto.slug = slug
-            
+
+            # Asignar el usuario autenticado al proyecto
             proyecto.user = request.user
             proyecto.save()
             return redirect('dashboard')
     else:
-        form = InvCientificaForm()
-    
+        form = InvCientificaForm(request=request)  # Pasa el request también aquí
+
+    # Si el formulario está deshabilitado, deshabilita los campos
     if form_disabled:
         for field in form.fields.values():
             field.widget.attrs['disabled'] = 'disabled'
-    
+
     return render(request, 'invcientifica/agregar_investigacion.html', {
         'form': form,
         'form_disabled': form_disabled,
@@ -181,8 +205,11 @@ def agregar_investigacion(request):
 @login_required
 @user_passes_test(lambda u: permiso_Estudiantes(u, 'Estudiantes')) 
 def vista_perfil(request):
-    proyectos_usuario = PerfilProyecto.objects.filter(user=request.user).order_by('-perfecha_creacion').prefetch_related('comentarios')
-    
+    proyectos_usuario = PerfilProyecto.objects.filter(
+        Q(user=request.user) | 
+        Q(user_uno=request.user) | 
+        Q(user_dos=request.user)
+    ).order_by('-perfecha_creacion').prefetch_related('comentarios')
     paginator = Paginator(proyectos_usuario, 1) 
     page_number = request.GET.get('page')
     proyectos_paginados = paginator.get_page(page_number)
@@ -193,10 +220,18 @@ def vista_perfil(request):
 class PerfilesParaAprobar(View):
     def get(self, request):
         proyectos = PerfilProyecto.objects.filter(perestado='Pendiente')
-        proyectos_con_formulario = {proyecto: PerComentarioForm() for proyecto in proyectos}
+        
+        # Paginación: Muestra solo 1 proyecto por página
+        paginator = Paginator(proyectos, 1)
+        page_number = request.GET.get('page')
+        proyectos_paginados = paginator.get_page(page_number)
+        
+        proyectos = PerfilProyecto.objects.filter(perestado='Pendiente')
+        proyectos_con_formulario = {proyecto: PerComentarioForm() for proyecto in proyectos_paginados}
         
         context = {
             'proyectos': proyectos_con_formulario,
+            'paginador': proyectos_paginados 
         }
         return render(request, 'perfil/PerfilesParaAprobar.html', context)
     
@@ -242,12 +277,22 @@ class RechazarPerfil(View):
 
 @user_passes_test(lambda u: permiso_Estudiantes(u, 'Estudiantes'))
 def agregar_perfil(request):
-    tiene_investigacion_aprobada = InvCientifica.objects.filter(user=request.user, investado='Aprobado').exists()
-    tiene_perfil_aprobado = PerfilProyecto.objects.filter(user=request.user, perestado='Aprobado').exists()
+    # Verificar si el usuario autenticado tiene una investigación aprobada como 'user', 'user_uno' o 'user_dos'
+    tiene_investigacion_aprobada = InvCientifica.objects.filter(
+        Q(user=request.user) | Q(user_uno=request.user) | Q(user_dos=request.user),
+        investado='Aprobado'
+        ).exists()
+    # Verificar si el usuario tiene un perfil de proyecto aprobado
+    
+    tiene_perfil_aprobado = PerfilProyecto.objects.filter(
+        Q(user=request.user) | Q(user_uno=request.user) | Q(user_dos=request.user),
+        perestado='Aprobado'
+        ).exists()
+    # Deshabilitar el formulario si no tiene investigación aprobada o si tiene un perfil aprobado
     form_disabled = not tiene_investigacion_aprobada or tiene_perfil_aprobado
 
     if request.method == 'POST' and not form_disabled:
-        formp = PerfilForm(request.POST, request.FILES)
+        formp = PerfilForm(request.POST, request.FILES, request=request)
         if formp.is_valid():
             proyecto = formp.save(commit=False)
             
@@ -264,7 +309,7 @@ def agregar_perfil(request):
         else:
             print("Formulario no es válido:", formp.errors)
     else:
-        formp = PerfilForm()
+        formp = PerfilForm(request=request)
 
     if form_disabled:
         for field in formp.fields.values():
@@ -317,14 +362,16 @@ def buscar_estudiante_privada(request):
 
             if acta_proyecto:
                 data = {
-                    'acta': acta_proyecto.acta,
-                    'titulo': acta_proyecto.titulo,
-                    'lugar': acta_proyecto.lugar,
-                    'tutor': acta_proyecto.tutor.id,
-                    'jurado_1': acta_proyecto.jurado_1.id,
-                    'jurado_2': acta_proyecto.jurado_2.id,
-                    'jurado_3': acta_proyecto.jurado_3.id,
-                    'modalidad': acta_proyecto.modalidad.id,
+                    'acta': getattr(acta_proyecto.acta, 'id', acta_proyecto.acta) if acta_proyecto.acta else None,
+                    'estudiante_uno': getattr(acta_proyecto.estudiante_uno, 'id', None),
+                    'estudiante_dos': getattr(acta_proyecto.estudiante_dos, 'id', None),
+                    'titulo': getattr(acta_proyecto.titulo, 'id', acta_proyecto.titulo) if acta_proyecto.acta else None,
+                    'lugar': getattr(acta_proyecto.lugar, 'id', acta_proyecto.lugar) if acta_proyecto.acta else None,
+                    'tutor': getattr(acta_proyecto.tutor, 'id', None),
+                    'jurado_1': getattr(acta_proyecto.jurado_1, 'id', None),
+                    'jurado_2': getattr(acta_proyecto.jurado_2, 'id', None),
+                    'jurado_3': getattr(acta_proyecto.jurado_3, 'id', None),
+                    'modalidad': getattr(acta_proyecto.modalidad, 'id', None),
                 }
             else:
                 data = {}
@@ -347,15 +394,17 @@ def buscar_estudiante_publica(request):
 
             if acta_proyecto:
                 data = {
-                    'acta': acta_proyecto.acta,
-                    'titulo': acta_proyecto.titulo,
-                    'lugar': acta_proyecto.lugar,
-                    'tutor': acta_proyecto.tutor.id,
-                    'jurado_1': acta_proyecto.jurado_1.id,
-                    'jurado_2': acta_proyecto.jurado_2.id,
-                    'jurado_3': acta_proyecto.jurado_3.id,
-                    'modalidad': acta_proyecto.modalidad.id,
-                    'calificacion1': acta_proyecto.calificacion1,
+                    'acta': getattr(acta_proyecto.acta, 'id', acta_proyecto.acta) if acta_proyecto.acta else None,
+                    'estudiante_uno': getattr(acta_proyecto.estudiante_uno, 'id', None),
+                    'estudiante_dos': getattr(acta_proyecto.estudiante_dos, 'id', None),
+                    'titulo': getattr(acta_proyecto.titulo, 'id', acta_proyecto.titulo) if acta_proyecto.acta else None,
+                    'lugar': getattr(acta_proyecto.lugar, 'id', acta_proyecto.lugar) if acta_proyecto.acta else None,
+                    'tutor': getattr(acta_proyecto.tutor, 'id', None),
+                    'jurado_1': getattr(acta_proyecto.jurado_1, 'id', None),
+                    'jurado_2': getattr(acta_proyecto.jurado_2, 'id', None),
+                    'jurado_3': getattr(acta_proyecto.jurado_3, 'id', None),
+                    'modalidad': getattr(acta_proyecto.modalidad, 'id', None),
+                    'calificacion1': getattr(acta_proyecto.calificacion1, 'id', acta_proyecto.calificacion1) if acta_proyecto.acta else None,
                 }
             else:
                 data = {}
@@ -523,11 +572,13 @@ def buscar_estudiante_paractivar(request):
 
             if activar_estudiante:
                 data = {
-                    'tutor': activar_estudiante.tutor.id,
-                    'jurado_1': activar_estudiante.jurado_1.id,
-                    'jurado_2': activar_estudiante.jurado_2.id,
-                    'jurado_3': activar_estudiante.jurado_3.id,
-                    'modalidad': activar_estudiante.modalidad.id,
+                    'estudiante_uno': activar_estudiante.estudiante_uno.id if activar_estudiante.estudiante_uno else None,
+                    'estudiante_dos': activar_estudiante.estudiante_dos.id if activar_estudiante.estudiante_dos else None,
+                    'tutor': activar_estudiante.tutor.id if activar_estudiante.tutor else None,
+                    'jurado_1': activar_estudiante.jurado_1.id if activar_estudiante.jurado_1 else None,
+                    'jurado_2': activar_estudiante.jurado_2.id if activar_estudiante.jurado_2 else None,
+                    'jurado_3': activar_estudiante.jurado_3.id if activar_estudiante.jurado_3 else None,
+                    'modalidad': activar_estudiante.modalidad.id if activar_estudiante.modalidad else None,
                 }
             else:
                 data = {}
@@ -610,8 +661,13 @@ def crear_actividad(request):
 
 def lista_actividad(request):
     user = request.user
-    actividades = ProyectoFinal.objects.filter(estudiante=user).prefetch_related('comentarios').order_by('-fecha')
+    # Filtrar actividades donde el usuario sea estudiante, estudiante_uno o estudiante_dos
+    actividades = ProyectoFinal.objects.filter(
+        Q(estudiante=user) | Q(estudiante_uno=user) | Q(estudiante_dos=user)
+    ).prefetch_related('comentarios').order_by('-fecha')
+    
     return render(request, 'proyectofinal/lista_actividad.html', {'actividades': actividades})
+
 
 from .models import ComentarioProFinal
 
@@ -651,13 +707,15 @@ def revisar_actividad(request, actividad_id):
 
     return render(request, 'proyectofinal/revisar_actividad.html', {'actividad': actividad})
 
-
 def listaractividades(request):
-    actividades = ProyectoFinal.objects.exclude(
-        estado='Aprobado'
-    ).order_by('-fecha')
+    actividades_list = ProyectoFinal.objects.exclude(estado='Aprobado').order_by('-fecha')
     
+    paginator = Paginator(actividades_list, 1) 
+    page_number = request.GET.get('page') 
+    actividades = paginator.get_page(page_number) 
+
     return render(request, 'controlador/listaractividades.html', {'actividades': actividades})
+
 
 from django.db.models import Q
 @login_required
@@ -668,6 +726,9 @@ def listaactividades(request):
     ).exclude(
         estado='Aprobado'
     ).order_by('-fecha')
+    paginator = Paginator(actividades, 1) 
+    page_number = request.GET.get('page') 
+    actividades = paginator.get_page(page_number) 
     return render(request, 'controlador/listaactividades.html', {'actividades': actividades})
 
 @user_passes_test(lambda u: permiso_M_G(u, 'ADMMGS'))
@@ -888,3 +949,19 @@ class Pdf_Reporte_Perfiles(View):
  
 
     
+from .models import logica
+from .forms import logicaForm
+
+
+def logica_create(request):
+    if request.method == 'POST':
+        form = logicaForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Investigación científica creada con éxito.')
+            return redirect('dashboard')
+    else:
+        form = logicaForm()
+    
+    return render(request, 'logica_create.html', {'form': form})
+

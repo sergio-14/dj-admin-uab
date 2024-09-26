@@ -5,7 +5,7 @@ from django.utils.translation import gettext_lazy as _
 from .models import User
 from django.contrib.auth.models import Group, Permission
 from django.contrib.auth import authenticate
-
+from django.core.files import File
 
 class GroupForm(forms.ModelForm):
     class Meta:
@@ -88,13 +88,13 @@ class CustomUserCreationForm(UserCreationForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
+        user.imagen = File(open('static/img/SINFOTO.webp', 'rb'))  # Asigna la imagen por defecto
         if commit:
             user.save()
-            
             selected_groups = self.cleaned_data.get('groups')
             if selected_groups:
-                user.groups.set(selected_groups)  
-                return user
+                user.groups.set(selected_groups)
+        return user
 
 # Formulario para actualizar usuario
 class CustomUserChangeForm(forms.ModelForm):

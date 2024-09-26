@@ -10,7 +10,18 @@
     <article class="pb-3 colortext" >
       <form method="post" enctype="multipart/form-data" id="perfilForm" onsubmit="showConfirmationModal(event)">
         {% csrf_token %}
-        {{ formp|crispy }}
+        <div id="extra-users" style="display: {% if formp.habilitar_users.value %}block{% else %}none{% endif %};">
+          {{ formp.user_uno|as_crispy_field }}
+          {{ formp.user_dos|as_crispy_field }}<br>
+        </div>
+    
+        <!-- Render the rest of the form excluding user_uno and user_dos -->
+        {{ form.non_field_errors }}
+        {% for field in formp %}
+          {% if field.name != 'user_uno' and field.name != 'user_dos' %}
+            {{ field|as_crispy_field }}
+          {% endif %}
+        {% endfor %}
         {% if formp.errors %}
         <div class="alert alert-danger">
             <ul>
@@ -30,6 +41,23 @@
             <p class="text-end text colorestados">Formulario deshabilitado. Su Perfil de a sido "Aprobado" o Debes tener la investigación "Aprobada" para agregar un perfil.</p>
         {% endif %}
       </form>
+      <script>
+        const checkbox = document.getElementById('{{ formp.habilitar_users.id_for_label }}');
+        const extraUsersDiv = document.getElementById('extra-users');
+
+        checkbox.addEventListener('change', function() {
+          if (this.checked) {
+            extraUsersDiv.style.display = 'block'; // Show the extra user fields
+          } else {
+            extraUsersDiv.style.display = 'none'; // Hide the extra user fields
+          }
+        });
+
+        // Initialize visibility of extra user fields
+        if (!checkbox.checked) {
+          extraUsersDiv.style.display = 'none';
+        }
+      </script>
     </article>
   </div> 
 </div><br>

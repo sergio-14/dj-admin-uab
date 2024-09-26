@@ -9,21 +9,62 @@
     <div class="card narrow-card no-gutters">
       <div class="row ">
         <!-- Foto en un lado -->
-        {% if actividad.estudiante.imagen %}
-          <div class="col-md-3 col-lg-3 centered-img">
-              <img src="{{ actividad.estudiante.imagen.url }}" class="card-img imgperfil p-2" alt="Foto del estudiante" />
-          </div>
-        {% else %}
-          <div class="col-md-3 col-lg-3 centered-img">
-              <img src="{% static 'img/SINFOTO.webp' %}" class="card-img imgperfil" alt="Sin foto" />
-          </div>
-        {% endif %}
+        <div class="col-md-3 col-lg-3 centered-img">
+          <img id="profileImage" src="" alt="Imagen de perfil" class="card-img imgperfil p-2">
+        </div>
+      
+        <script>
+          // Crear una lista solo con los datos que existen
+          const images = [];
+      
+          // Agregar solo las imágenes y nombres que existen
+          if ("{{ actividad.estudiante.imagen|default_if_none:'' }}" && "{{ actividad.estudiante.nombre }}") {
+              images.push({ src: "{{ actividad.estudiante.imagen.url }}", name: "{{ actividad.estudiante.nombre }} {{ actividad.estudiante.apellido }}" });
+          }
+          if ("{{ actividad.estudiante_uno.imagen|default_if_none:'' }}" && "{{ actividad.estudiante_uno.nombre }}") {
+              images.push({ src: "{{ actividad.estudiante_uno.imagen.url }}", name: "{{ actividad.estudiante_uno.nombre }} {{ actividad.estudiante_uno.apellido }}" });
+          }
+          if ("{{ actividad.estudiante_dos.imagen|default_if_none:'' }}" && "{{ actividad.estudiante_dos.nombre }}") {
+              images.push({ src: "{{ actividad.estudiante_dos.imagen.url }}", name: "{{ actividad.estudiante_dos.nombre }} {{ actividad.estudiante_dos.apellido }}" });
+          }
+      
+          let currentIndex = 0;
+      
+          function rotateProfile() {
+              const profileImage = document.getElementById('profileImage');
+              const profileName = document.getElementById('profileName');
+      
+              // Cambiar imagen y nombre solo si hay imágenes
+              if (images.length > 0) {
+                  profileImage.src = images[currentIndex].src;
+                  profileName.textContent = images[currentIndex].name;
+              }
+          }
+      
+          // Mostrar imagen anterior
+          function showPrevImage() {
+              currentIndex = (currentIndex - 1 + images.length) % images.length;
+              rotateProfile();
+          }
+      
+          // Mostrar siguiente imagen
+          function showNextImage() {
+              currentIndex = (currentIndex + 1) % images.length;
+              rotateProfile();
+          }
+      
+          // Ejecutar rotación automática cada 3 segundos solo si hay imágenes
+          if (images.length > 0) {
+              setInterval(showNextImage, 3000); // Rotación automática
+              rotateProfile(); // Mostrar el primer perfil al cargar la página
+          }
+        </script>
         
         <!-- Contenido en el otro lado -->
         <div class="col-md-7 col-lg-8 pb-5">
           <div class="card-body">
             <!-- Texto con formato pre -->
-            <pre class="fecha colorfechas fontI">Universitario:  {{ actividad.estudiante }}                                           Fecha: {{ actividad.fecha }}</pre>
+            <pre class="fecha fontI colorestados">Postulante: <span id="profileName" class="estado colortext">{{ actividad.estudiante.nombre }} {{ actividad.estudiante.apellido }}</span>       Fecha: {{ actividad.fecha }}</pre>
             <!-- Título -->
             <h5 class="title text-center fontI colortitle pb-2">{{ actividad.titulo }}</h5>
             <div class="row pb-3">
@@ -154,7 +195,22 @@
       </div>
     </div>
    
-</div><br><br><br>
+</div><br><br>
+<div class="pagination">
+  <span class="step-links">
+      {% if actividades.has_previous %}
+          <a class="btn btn-sm btn-dark" href="?page={{ actividades.previous_page_number }}">anterior</a>
+      {% endif %}
+
+      <span class="current">
+          Página {{ actividades.number }} de {{ actividades.paginator.num_pages }}
+      </span>
+
+      {% if actividades.has_next %}
+          <a class="btn btn-sm btn-dark" href="?page={{ actividades.next_page_number }}">siguiente</a>
+      {% endif %}
+  </span>
+</div>
 
 {% endfor %}
 <script>

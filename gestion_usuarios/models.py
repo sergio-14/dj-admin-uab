@@ -31,8 +31,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     imagen = models.ImageField(upload_to='path/to/upload', null=True, blank=True)
     nombre = models.CharField(max_length=50)
     apellido = models.CharField(max_length=50)
-    ci = models.CharField(max_length=20, null=True, blank=True, unique=True)  # Cédula de Identidad
-    Ru = models.CharField(max_length=20, null=True, blank=True, unique=True)  # Cédula de Identidad
+    ci = models.CharField(max_length=20, null=True, blank=True, unique=True)  
+    Ru = models.CharField(max_length=20, null=True, blank=True, unique=True)  
     fecha_nac = models.DateField(null=True, blank=True)
     telefono = models.CharField(max_length=20, null=True, blank=True)
     firma = models.ImageField(upload_to='path/to/signatures', null=True, blank=True)

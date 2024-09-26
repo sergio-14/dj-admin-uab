@@ -22,6 +22,12 @@
                 {{ form.estudiante.label_tag }} <br>{{ form.estudiante }}
               </div>
               <div class="col-md-4 pt-1">
+                {{ form.estudiante_uno.label_tag }} <br>{{ form.estudiante_uno }}
+              </div>
+              <div class="col-md-4 pt-1">
+                {{ form.estudiante_dos.label_tag }} <br>{{ form.estudiante_dos }}
+              </div>
+              <div class="col-md-4 pt-1">
                 {{ form.tutor.label_tag }} <br>{{ form.tutor }}
               </div>
               <div class="col-md-4 pt-1">
@@ -71,20 +77,21 @@
 <script>
   document.getElementById('id_estudiante').addEventListener('change', function() {
     let estudianteId = this.value;  // Asume que id_estudiante es el id del campo de selección
-
     fetch(`/buscar_estudiante_paractivar?id=${estudianteId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data) {
-                document.getElementById('id_tutor').value = data.tutor;
-                document.getElementById('id_jurado_1').value = data.jurado_1;
-                document.getElementById('id_jurado_2').value = data.jurado_2;
-                document.getElementById('id_jurado_3').value = data.jurado_3;
-                document.getElementById('id_modalidad').value = data.modalidad;
-            }
-        })
-        .catch(error => console.error('Error:', error));
-});
+      .then(response => response.json())
+      .then(data => {
+        if (data) {
+          document.getElementById('id_estudiante_uno').value = data.estudiante_uno !== null ? data.estudiante_uno : '';
+          document.getElementById('id_estudiante_dos').value = data.estudiante_dos !== null ? data.estudiante_dos : '';
+          document.getElementById('id_tutor').value = data.tutor !== null ? data.tutor : '';
+          document.getElementById('id_jurado_1').value = data.jurado_1 !== null ? data.jurado_1 : '';
+          document.getElementById('id_jurado_2').value = data.jurado_2 !== null ? data.jurado_2 : '';
+          document.getElementById('id_jurado_3').value = data.jurado_3 !== null ? data.jurado_3 : '';
+          document.getElementById('id_modalidad').value = data.modalidad !== null ? data.modalidad : '';
+        }
+      })
+      .catch(error => console.error('Error:', error));
+    });
 
   function submitForm(action) {
     const form = document.getElementById('approvalForm');

@@ -8,7 +8,7 @@ from .views import TransferirActividadView, pdf_reporte_repositorio
 #from .views import crear_repositorio
 
 urlpatterns = [   
-                
+    #path('', home, name='home'),            
     path('admrepositorio/transferir_actividad/<int:actividad_id>/', TransferirActividadView.as_view(), name='transferir_actividad'),
     path('admrepositorio/listarepositorios/', views.listarepositorios, name='listarepositorios'),
     path('admrepositorio/listar_actividades_aprovadas/', views.listaractividadesaprovadas, name='listaractividadesaprovadas'),
@@ -19,9 +19,6 @@ urlpatterns = [
     path('agregar-actividad-repositorio/', views.agregar_actividad_repositorio, name='agregar_actividad_repositorio'),
     
     path('admrepositorio/pdf/', pdf_reporte_repositorio.as_view(), name='pdf_reporte_repositorio'),
-    #path('pasardatos/', views.pasardatos, name='pasardatos'),
+    
     
 ]
-#if settings.DEBUG:
-   # urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-#handler403 = handle_permission_denied

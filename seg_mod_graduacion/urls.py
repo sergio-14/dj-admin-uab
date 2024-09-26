@@ -60,6 +60,7 @@ urlpatterns = [
     
     path('reportes/home_reporte', views.home_reporte, name='home_reporte'),
     
+    path('logica_create/', views.logica_create, name='logica_create'),
 ]
 #+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 handler403 = handle_permission_denied
