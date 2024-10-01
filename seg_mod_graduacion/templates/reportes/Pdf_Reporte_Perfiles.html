@@ -15,6 +15,9 @@
             margin: 2px;
             margin-bottom: 10px;
         }
+        .descrip{
+            width: 400px;
+        }
         table {
             width: 100%;
             text-align: center;
@@ -67,7 +70,20 @@
         <tbody>
             <tr>
                 <td>{{ actividad.perfecha_creacion }}</td>
-                <td>{{ actividad.user.apellido }} {{ actividad.user.nombre }}</td>
+                <td id="descrip">
+                    <ul class="pl">{{ actividad.user.apellido }} {{ actividad.user.nombre }}</ul>
+                    <ul id="estudianteUno">
+                        {% if actividad.user_uno %}
+                        {{ actividad.user_uno.apellido }} {{ actividad.user_uno.nombre }}
+                        {% endif %}
+                    </ul>
+                    <!-- Datos del tercer estudiante (estudiante_dos) -->
+                    <ul id="estudianteDos">
+                        {% if actividad.user_dos %}
+                        {{ actividad.user_dos.apellido }} {{ actividad.user_dos.nombre }}
+                        {% endif %}
+                    </ul>
+                </td>   
                 <td class="des">{{ actividad.pertitulo }}</td>
                 <td>{{ actividad.permodalidad }}</td>
             </tr>
